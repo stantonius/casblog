@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "casblog"
+  site-url: "https://cas.github.io/casblog"
+  description: ""
+  repo-branch: main
+  repo-url: "https://github.com/cas/casblog"
