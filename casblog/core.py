@@ -4,8 +4,8 @@
 
 # %% auto 0
 __all__ = ['PROJECT_ROOT', 'hdrs', 'app', 'rt', 'cfg', 'db', 'icons', 'find_project_root', 'Post', 'get_all_categories',
-           'get_posts_by_category', 'format_date', 'get_post_by_slug', 'sidebar', 'navbar', 'layout', 'index', 'cat',
-           'post', 'about']
+           'get_posts_by_category', 'format_date', 'get_post_by_slug', 'extract_headers', 'render_md_with_ids',
+           'sidebar', 'navbar', 'layout', 'toc_nav', 'index', 'cat', 'post', 'about']
 
 # %% ../nbs/00_core.ipynb 5
 import re
@@ -112,6 +112,35 @@ def get_post_by_slug(slug):
     return posts[0] if posts else None
 
 # %% ../nbs/00_core.ipynb 32
+def extract_headers(md_content):
+    """Extract headers from markdown, return list of (level, text, slug)."""
+    headers = []
+    in_code_block = False
+    for line in md_content.split('\n'):
+        # Toggle code block state
+        if line.strip().startswith('```') or line.strip().startswith('~~~'):
+            in_code_block = not in_code_block
+            continue
+        # Only match headers outside code blocks
+        if not in_code_block and (m := re.match(r'^(#{1,6})\s+(.+)$', line)):
+            level, text = len(m.group(1)), m.group(2).strip()
+            slug = re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
+            headers.append((level, text, slug))
+    return headers
+
+
+# %% ../nbs/00_core.ipynb 33
+def render_md_with_ids(md_content):
+    """Render markdown and add IDs to headers for scrollspy."""
+    html = render_md(md_content)
+    def add_id(match):
+        tag, attrs, text = match.group(1), match.group(2), match.group(3)
+        slug = re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
+        # Preserve existing attributes, just add id
+        return f'<{tag}{attrs} id="{slug}">{text}</{tag}>'
+    return NotStr(re.sub(r'<(h[1-6])([^>]*)>([^<]+)</\1>', add_id, str(html)))
+
+# %% ../nbs/00_core.ipynb 35
 icons = SvgSprites()
 
 def sidebar():
@@ -133,7 +162,7 @@ def sidebar():
         ),
     )
 
-# %% ../nbs/00_core.ipynb 33
+# %% ../nbs/00_core.ipynb 36
 def navbar():
     return Div(
         Div(
@@ -147,7 +176,7 @@ def navbar():
         cls="flex justify-between items-center p-4 border-b"
     )
 
-# %% ../nbs/00_core.ipynb 34
+# %% ../nbs/00_core.ipynb 37
 def layout(content):
     return (
         Title(cfg.name),  # sets browser tab/page name
@@ -165,7 +194,20 @@ def layout(content):
     
 
 
-# %% ../nbs/00_core.ipynb 36
+# %% ../nbs/00_core.ipynb 38
+def toc_nav(headers):
+    if not headers:
+        return None
+    return NavContainer(
+        Ul(*[Li(A(text, href=f"#{slug}"), cls=f"pl-{(level-1)*2}") 
+             for level, text, slug in headers],
+           cls="uk-nav uk-nav-default", uk_scrollspy_nav="closest: li; scroll: true"),
+        cls="sticky top-24 w-48 hidden lg:block self-start"  # fixed width instead of w-1/4
+    )
+
+
+
+# %% ../nbs/00_core.ipynb 40
 @rt
 def index():
     posts = db.t.post.rows_where(order_by='created desc')
@@ -182,7 +224,7 @@ def index():
     )
     return layout(post_list)
 
-# %% ../nbs/00_core.ipynb 37
+# %% ../nbs/00_core.ipynb 41
 @rt("/cat/{category}", methods=["GET"])
 def cat(category: str):
     category = unquote(category)
@@ -201,25 +243,28 @@ def cat(category: str):
     ) if posts else P(f"No posts in '{category}'")
     return layout(post_list)
 
-# %% ../nbs/00_core.ipynb 38
+# %% ../nbs/00_core.ipynb 42
 @rt("/post/{slug}", methods=["GET"])
 def post(slug: str):
-    """
-    Docs for monster ui markdown (`render_md`): https://monsterui.answer.ai/api_ref/docs_markdown
-    """
     post = get_post_by_slug(slug)
     if not post: return layout(P("Post not found"))
-    return layout(Div(
+    
+    headers = extract_headers(post['content'])
+    content_html = render_md_with_ids(post['content'])
+    toc = toc_nav(headers)
+    
+    post_content = Div(
         H1(post['title']),
-        Small(
-            f"Published {format_date(post['created'])}" + 
-            (f" · Updated {format_date(post['updated'])}" if post['updated'] else "")
-        ),
-        Div(render_md(post['content']), cls="mt-4"),
-        cls="max-w-2xl"
-    ))
+        Small(f"Published {format_date(post['created'])}" + 
+              (f" · Updated {format_date(post['updated'])}" if post['updated'] else "")),
+        Div(content_html, cls="mt-4"),
+        cls="max-w-3xl flex-1"  # wider content
+    )
+    
+    return layout(Div(post_content, toc, cls="flex gap-6 mx-auto max-w-5xl") if toc else post_content)
 
-# %% ../nbs/00_core.ipynb 39
+
+# %% ../nbs/00_core.ipynb 43
 @rt("/about")
 def about():
     return layout(Div(
