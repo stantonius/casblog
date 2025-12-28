@@ -156,3 +156,4 @@ checklink/cookies.txt
 data/dev.db
 data/*.db-shm
 data/*.db-wal
+.playwright-mcp/

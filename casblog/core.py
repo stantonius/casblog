@@ -280,7 +280,7 @@ def post(slug: str):
         cls="max-w-prose flex-1"  # optimized for reading (~65 chars)
     )
     
-    return layout(Div(post_content, toc, cls="flex gap-6 mx-auto max-w-5xl") if toc else post_content)
+    return layout(Div(post_content, toc, cls="flex justify-between gap-8 mx-auto max-w-6xl") if toc else post_content)
 
 # %% ../nbs/00_core.ipynb 43
 @rt("/about")
