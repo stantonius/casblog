@@ -42,8 +42,11 @@ hdrs = (*Theme.slate.headers(highlightjs=True),
         Link(rel="apple-touch-icon", sizes="180x180", href="/static/favicons/apple-touch-icon.png"),
         Link(rel="manifest", href="/static/favicons/site.webmanifest"),
         Script(src="https://unpkg.com/hyperscript.org@0.9.12"),
-        Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap"),
-        Style("body { font-family: 'IBM Plex Mono', monospace; } h1,h2,h3,h4,h5,h6 { font-weight: 600; }")
+        Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"),
+        Style("""
+            body { font-family: 'IBM Plex Sans', sans-serif; line-height: 1.6; }
+            h1,h2,h3,h4,h5,h6 { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+        """)
 )
 
 app = FastHTML(hdrs=hdrs)
@@ -274,11 +277,10 @@ def post(slug: str):
         Small(f"Published {format_date(post['created'])}" + 
               (f" · Updated {format_date(post['updated'])}" if post['updated'] else "")),
         Div(content_html, cls="mt-4"),
-        cls="max-w-3xl flex-1"  # wider content
+        cls="max-w-prose flex-1"  # optimized for reading (~65 chars)
     )
     
     return layout(Div(post_content, toc, cls="flex gap-6 mx-auto max-w-5xl") if toc else post_content)
-
 
 # %% ../nbs/00_core.ipynb 43
 @rt("/about")
