@@ -115,17 +115,27 @@ def get_post_by_slug(slug):
 def extract_headers(md_content):
     """Extract headers from markdown, return list of (level, text, slug)."""
     headers = []
+    slug_counts = Counter()
     in_code_block = False
     for line in md_content.split('\n'):
-        # Toggle code block state
         if line.strip().startswith('```') or line.strip().startswith('~~~'):
             in_code_block = not in_code_block
             continue
-        # Only match headers outside code blocks
         if not in_code_block and (m := re.match(r'^(#{1,6})\s+(.+)$', line)):
             level, text = len(m.group(1)), m.group(2).strip()
-            slug = re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
-            headers.append((level, text, slug))
+            # Strip HTML comments (both encoded and raw forms)
+            text_clean = re.sub(r'<!--.*?-->', '', text)
+            text_clean = re.sub(r'&lt;!--.*?--&gt;', '', text_clean).strip()
+            # Skip reply markers
+            if re.search(r'🤖.*Reply.*🤖', text):
+                continue
+            # Skip headers that are mostly emoji/special chars (no alphanumeric content)
+            if not re.search(r'[a-zA-Z0-9]', text_clean):
+                continue
+            base_slug = re.sub(r'[^a-z0-9]+', '-', text_clean.lower()).strip('-')
+            slug_counts[base_slug] += 1
+            slug = base_slug if slug_counts[base_slug] == 1 else f"{base_slug}-{slug_counts[base_slug]}"
+            headers.append((level, text_clean, slug))
     return headers
 
 
@@ -133,12 +143,20 @@ def extract_headers(md_content):
 def render_md_with_ids(md_content):
     """Render markdown and add IDs to headers for scrollspy."""
     html = render_md(md_content)
+    slug_counts = Counter()
+    
     def add_id(match):
         tag, attrs, text = match.group(1), match.group(2), match.group(3)
-        slug = re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
-        # Preserve existing attributes, just add id
+        text_clean = re.sub(r'<!--.*?-->', '', text)
+        text_clean = re.sub(r'&lt;!--.*?--&gt;', '', text_clean).strip()
+        base_slug = re.sub(r'[^a-z0-9]+', '-', text_clean.lower()).strip('-')
+        slug_counts[base_slug] += 1
+        slug = base_slug if slug_counts[base_slug] == 1 else f"{base_slug}-{slug_counts[base_slug]}"
         return f'<{tag}{attrs} id="{slug}">{text}</{tag}>'
+    
     return NotStr(re.sub(r'<(h[1-6])([^>]*)>([^<]+)</\1>', add_id, str(html)))
+
+
 
 # %% ../nbs/00_core.ipynb 35
 icons = SvgSprites()
@@ -146,21 +164,20 @@ icons = SvgSprites()
 def sidebar():
     categories = get_all_categories()
     return Div(
-        # Backdrop overlay - click to close
         Div(id="sidebar-backdrop", 
             cls="fixed inset-0 bg-black/50 z-40 hidden md:hidden",
             _="on click toggle .translate-x-0 .-translate-x-full on #sidebar then toggle .hidden on me"),
-        # Sidebar panel
         Div(
             Button(icons("x"), cls="md:hidden p-2 self-end", 
                    _="on click toggle .translate-x-0 .-translate-x-full on #sidebar then toggle .hidden on #sidebar-backdrop"),
             H4("Categories", cls="font-semibold mb-2"),
-            *[A(c, href=f"/cat/{quote(c)}", cls="block text-sm hover:underline") for c in categories],
+            *[A(c, href=f"/cat/{quote(c)}", cls="block text-sm hover:underline py-1.5") for c in categories],
             cls="flex flex-col fixed md:static top-0 left-0 h-full w-48 bg-base-100 p-4 z-50 "
                 "transition-transform duration-300 -translate-x-full md:translate-x-0",
             id="sidebar"
         ),
     )
+
 
 # %% ../nbs/00_core.ipynb 36
 def navbar():
@@ -202,27 +219,26 @@ def toc_nav(headers):
         Ul(*[Li(A(text, href=f"#{slug}"), cls=f"pl-{(level-1)*2}") 
              for level, text, slug in headers],
            cls="uk-nav uk-nav-default", uk_scrollspy_nav="closest: li; scroll: true"),
-        cls="sticky top-24 w-48 hidden lg:block self-start"  # fixed width instead of w-1/4
+        cls="sticky top-24 w-48 hidden lg:block self-start max-h-[calc(100vh-8rem)] overflow-y-auto"
     )
-
-
 
 # %% ../nbs/00_core.ipynb 40
 @rt
 def index():
     posts = db.t.post.rows_where(order_by='created desc')
     post_list = Div(
-        *[Card(
-            H3(A(p['title'], href=f"/post/{p['slug']}")),
+        *[A(Card(
+            H3(p['title']),
             P(p['content'][:100], cls="text-sm"),
             footer=Small(
                 f"Published {format_date(p['created'])}" + 
                 (f" · Updated {format_date(p['updated'])}" if p['updated'] else "")
             )
-        ) for i, p in enumerate(posts)],
+        ), href=f"/post/{p['slug']}", cls="block hover:opacity-80") for i, p in enumerate(posts)],
         cls="space-y-4"
     )
     return layout(post_list)
+
 
 # %% ../nbs/00_core.ipynb 41
 @rt("/cat/{category}", methods=["GET"])
