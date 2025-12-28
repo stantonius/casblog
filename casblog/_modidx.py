@@ -2,8 +2,8 @@
 
 d = { 'settings': { 'branch': 'main',
                 'doc_baseurl': '/casblog',
-                'doc_host': 'https://cas.github.io',
-                'git_url': 'https://github.com/cas/casblog',
+                'doc_host': 'https://stantonius.github.io',
+                'git_url': 'https://github.com/stantonius/casblog',
                 'lib_path': 'casblog'},
   'syms': { 'casblog.core': { 'casblog.core.Post': ('core.html#post', 'casblog/core.py'),
                               'casblog.core.Post.__post_init__': ('core.html#post.__post_init__', 'casblog/core.py'),
