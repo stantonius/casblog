@@ -3,3 +3,4 @@ fastlite==0.2.2
 monsterui==1.0.34
 fastcore==1.8.17
 fastlucide==0.0.6
+httpx
