@@ -27,4 +27,7 @@ d = { 'settings': { 'branch': 'main',
             'casblog.crud': { 'casblog.crud.fetch_gist_markdown': ('crud.html#fetch_gist_markdown', 'casblog/crud.py'),
                               'casblog.crud.get_db': ('crud.html#get_db', 'casblog/crud.py'),
                               'casblog.crud.parse_categories': ('crud.html#parse_categories', 'casblog/crud.py'),
-                              'casblog.crud.save_post': ('crud.html#save_post', 'casblog/crud.py')}}}
+                              'casblog.crud.read_notebook_markdown': ('crud.html#read_notebook_markdown', 'casblog/crud.py'),
+                              'casblog.crud.save_post': ('crud.html#save_post', 'casblog/crud.py'),
+                              'casblog.crud.sync_notebook_to_post': ('crud.html#sync_notebook_to_post', 'casblog/crud.py'),
+                              'casblog.crud.update_post': ('crud.html#update_post', 'casblog/crud.py')}}}
