@@ -197,14 +197,14 @@ def navbar():
     )
 
 # %% ../nbs/00_core.ipynb 37
-def layout(content):
+def layout(content, show_sidebar=True):
     return (
         Title(cfg.name),  # sets browser tab/page name
         Div(
         icons,
         navbar(),
         Div(
-            sidebar(),
+            sidebar() if show_sidebar else None,
             Div(content, cls="p-4 w-full"),
             cls="flex min-h-[80vh]"
         ),
@@ -266,21 +266,34 @@ def cat(category: str):
 @rt("/post/{slug}", methods=["GET"])
 def post(slug: str):
     post = get_post_by_slug(slug)
-    if not post: return layout(P("Post not found"))
-    
+    if not post: return layout(P("Post not found"), show_sidebar=False)
+
     headers = extract_headers(post['content'])
     content_html = render_md_with_ids(post['content'])
     toc = toc_nav(headers)
-    
-    post_content = Div(
+
+    # Build post content elements
+    post_inner = [
         H1(post['title']),
-        Small(f"Published {format_date(post['created'])}" + 
+        Small(f"Published {format_date(post['created'])}" +
               (f" · Updated {format_date(post['updated'])}" if post['updated'] else "")),
-        Div(content_html, cls="mt-4"),
-        cls="max-w-prose flex-1"  # optimized for reading (~65 chars)
-    )
-    
-    return layout(Div(post_content, toc, cls="flex justify-between gap-8 mx-auto max-w-6xl") if toc else post_content)
+        Div(content_html, cls="mt-4")
+    ]
+
+    if toc:
+        # Grid: [1fr spacer] [prose ~65ch] [toc 12rem] [1fr spacer]
+        # The 1fr columns absorb extra space equally, centering the prose+toc
+        post_content = Div(*post_inner, cls="col-start-2")
+        content = Div(
+            post_content,
+            Div(toc, cls="col-start-3"),
+            cls="grid grid-cols-[1fr_minmax(0,65ch)_12rem_1fr] gap-8 items-start"
+        )
+    else:
+        # No ToC — just center the prose
+        content = Div(*post_inner, cls="max-w-prose mx-auto")
+
+    return layout(content, show_sidebar=False)
 
 # %% ../nbs/00_core.ipynb 43
 @rt("/about")
@@ -288,5 +301,5 @@ def about():
     return layout(Div(
         H3("About"),
         P(f"Hi, I'm {cfg.author}. Welcome to my blog!"),
-        cls="max-w-2xl"
-    ))
+        cls="max-w-prose mx-auto"
+    ), show_sidebar=False)
