@@ -186,13 +186,14 @@ def sidebar():
 def navbar():
     return Div(
         Div(
-            Button(icons("menu"), cls="md:hidden p-2", 
+            Button(icons("menu"), cls="md:hidden p-2",
                    _="on click toggle .translate-x-0 .-translate-x-full on #sidebar then toggle .hidden on #sidebar-backdrop"),
-            A("Home", href="/"), A("About", href="/about"), 
+            A("Home", href="/"), A("About", href="/about"),
             cls="flex gap-4 items-center"
         ),
         A(H3(cfg.name), href='/'),
-        Div(cls="w-24"),
+        Div(ThemePicker(color=False, radii=False, shadows=False, font=False, mode=True),
+            cls="flex items-center"),
         cls="flex justify-between items-center p-4 border-b"
     )
 
