@@ -5,7 +5,7 @@
 # %% auto 0
 __all__ = ['PROJECT_ROOT', 'hdrs', 'app', 'rt', 'cfg', 'db', 'icons', 'find_project_root', 'Post', 'get_all_categories',
            'get_posts_by_category', 'format_date', 'get_post_by_slug', 'extract_headers', 'render_md_with_ids',
-           'sidebar', 'navbar', 'layout', 'toc_nav', 'index', 'cat', 'post', 'about']
+           'sidebar', 'theme_toggle', 'navbar', 'layout', 'toc_nav', 'index', 'cat', 'post', 'about']
 
 # %% ../nbs/00_core.ipynb 5
 import re
@@ -35,7 +35,7 @@ def find_project_root():
 PROJECT_ROOT = find_project_root()
 
 # %% ../nbs/00_core.ipynb 11
-hdrs = (*Theme.slate.headers(highlightjs=True),
+hdrs = (*Theme.violet.headers(highlightjs=True),
         Link(rel="icon", href="/static/favicons/favicon.ico"),
         Link(rel="icon", type="image/png", sizes="32x32", href="/static/favicons/favicon-32x32.png"),
         Link(rel="icon", type="image/png", sizes="16x16", href="/static/favicons/favicon-16x16.png"),
@@ -183,6 +183,20 @@ def sidebar():
 
 
 # %% ../nbs/00_core.ipynb 36
+def theme_toggle():
+    """Single button theme toggle - shows sun in dark mode, moon in light mode."""
+    return Button(
+        Span(icons("sun"), cls="hidden dark:block"),   # visible in dark mode
+        Span(icons("moon"), cls="block dark:hidden"),  # visible in light mode
+        cls="p-2 hover:bg-base-200 rounded",
+        _="""on click 
+             toggle .dark on <html/>
+             js const f = JSON.parse(localStorage.getItem('__FRANKEN__') || '{}'); 
+                f.mode = document.documentElement.classList.contains('dark') ? 'dark' : 'light'; 
+                localStorage.setItem('__FRANKEN__', JSON.stringify(f)); end"""
+    )
+
+# %% ../nbs/00_core.ipynb 37
 def navbar():
     return Div(
         Div(
@@ -192,12 +206,11 @@ def navbar():
             cls="flex gap-4 items-center"
         ),
         A(H3(cfg.name), href='/'),
-        Div(ThemePicker(color=False, radii=False, shadows=False, font=False, mode=True),
-            cls="flex items-center"),
+        theme_toggle(),
         cls="flex justify-between items-center p-4 border-b"
     )
 
-# %% ../nbs/00_core.ipynb 37
+# %% ../nbs/00_core.ipynb 38
 def layout(content, show_sidebar=True):
     return (
         Title(cfg.name),  # sets browser tab/page name
@@ -215,7 +228,7 @@ def layout(content, show_sidebar=True):
     
 
 
-# %% ../nbs/00_core.ipynb 38
+# %% ../nbs/00_core.ipynb 39
 def toc_nav(headers):
     if not headers:
         return None
@@ -226,7 +239,7 @@ def toc_nav(headers):
         cls="sticky top-24 w-48 hidden lg:block self-start max-h-[calc(100vh-8rem)] overflow-y-auto"
     )
 
-# %% ../nbs/00_core.ipynb 40
+# %% ../nbs/00_core.ipynb 41
 @rt
 def index():
     posts = db.t.post.rows_where(order_by='created desc')
@@ -244,7 +257,7 @@ def index():
     return layout(post_list)
 
 
-# %% ../nbs/00_core.ipynb 41
+# %% ../nbs/00_core.ipynb 42
 @rt("/cat/{category}", methods=["GET"])
 def cat(category: str):
     category = unquote(category)
@@ -263,7 +276,7 @@ def cat(category: str):
     ) if posts else P(f"No posts in '{category}'")
     return layout(post_list)
 
-# %% ../nbs/00_core.ipynb 42
+# %% ../nbs/00_core.ipynb 43
 @rt("/post/{slug}", methods=["GET"])
 def post(slug: str):
     post = get_post_by_slug(slug)
@@ -296,7 +309,7 @@ def post(slug: str):
 
     return layout(content, show_sidebar=False)
 
-# %% ../nbs/00_core.ipynb 43
+# %% ../nbs/00_core.ipynb 44
 @rt("/about")
 def about():
     return layout(Div(
