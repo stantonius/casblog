@@ -8,6 +8,18 @@ Human-in-the-loop workflow. I must understand every change before proceeding. Pr
 
 ## Development: nbdev
 
+### Use `uv run`
+
+Always use `uv run` to execute commands — this ensures they run in the project's virtual environment with correct dependencies:
+
+```bash
+uv run nbdev_test
+uv run nbdev_export
+uv run python main.py
+```
+
+### Notebooks
+
 - Notebooks are source of truth — never edit generated `.py` files
 - One function/class per cell, followed by inline tests in the next cell
 - Markdown cells explain *what* and *why* before code
@@ -75,16 +87,14 @@ assert obj.new_method() == ...  # use obj from earlier
 
 ### nbdev Commands
 
-Run before every commit:
-```bash
-nbdev_prepare  # clean, export, and test in one command
-```
-
-Pre-commit hooks handle notebook cleanup automatically (stripping outputs, metadata). Don't manually clean notebooks—just commit and let the hooks run.
+**ALWAYS run `nbdev_test` before `nbdev_export` or `nbdev_prepare`.** Never export untested code.
 
 Key commands:
-- `nbdev_export` — generates `.py` modules from notebooks. Run after any code changes to keep modules in sync.
-- `nbdev_test` — runs all test cells. Run frequently during development.
+- `nbdev_test` — runs all test cells. **Run this first, every time you change notebook code.**
+- `nbdev_export` — generates `.py` modules from notebooks. Only run after tests pass.
+- `nbdev_prepare` — clean, export, and test in one command. Use before commits.
+
+Pre-commit hooks handle notebook cleanup automatically (stripping outputs, metadata). Don't manually clean notebooks—just commit and let the hooks run.
 
 ### Cell Directives
 
@@ -97,7 +107,7 @@ Use `#| notest` for:
 - Interactive/exploratory cells not meant as tests
 - Cells that only make sense when running the notebook manually
 
-**Always run `nbdev_test` after changes** to ensure all tests pass. Don't assume passing cells in the notebook means `nbdev_test` will pass—they can differ.
+Don't assume passing cells in the notebook means `nbdev_test` will pass—they can differ.
 
 ## Commits
 
